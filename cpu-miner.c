@@ -103,11 +103,13 @@ struct workio_cmd {
 enum algos {
 	ALGO_SCRYPT,		/* scrypt(1024,1,1) */
 	ALGO_SHA256D,		/* SHA-256d */
+	ALGO_SCRYPTCHA,		/* SHA-256d(scrypt(32768,1,1)) */
 };
 
 static const char *algo_names[] = {
 	[ALGO_SCRYPT]		= "scrypt",
 	[ALGO_SHA256D]		= "sha256d",
+	[ALGO_SCRYPTCHA]	= "scryptCHA",
 };
 
 bool opt_debug = false;
@@ -169,9 +171,10 @@ static char const usage[] = "\
 Usage: " PROGRAM_NAME " [OPTIONS]\n\
 Options:\n\
   -a, --algo=ALGO       specify the algorithm to use\n\
-                          scrypt    scrypt(1024, 1, 1) (default)\n\
-                          scrypt:N  scrypt(N, 1, 1)\n\
-                          sha256d   SHA-256d\n\
+                          scrypt      scrypt(1024, 1, 1) (default)\n\
+                          scrypt:N    scrypt(N, 1, 1)\n\
+                          sha256d     SHA-256d\n\
+                          scryptCHA   SHA-256d(scrypt(32768, 1, 1))\n\
   -o, --url=URL         URL of mining server\n\
   -O, --userpass=U:P    username:password pair for mining server\n\
   -u, --user=USERNAME   username for mining server\n\
@@ -1097,7 +1100,7 @@ static void stratum_gen_work(struct stratum_ctx *sctx, struct work *work)
 		free(xnonce2str);
 	}
 
-	if (opt_algo == ALGO_SCRYPT)
+	if (opt_algo == ALGO_SCRYPT || opt_algo == ALGO_SCRYPTCHA)
 		diff_to_target(work->target, sctx->job.diff / 65536.0);
 	else
 		diff_to_target(work->target, sctx->job.diff);
@@ -1135,6 +1138,15 @@ static void *miner_thread(void *userdata)
 		scratchbuf = scrypt_buffer_alloc(opt_scrypt_n);
 		if (!scratchbuf) {
 			applog(LOG_ERR, "scrypt buffer allocation failed");
+			pthread_mutex_lock(&applog_lock);
+			exit(1);
+		}
+	}
+
+	if (opt_algo == ALGO_SCRYPTCHA) {
+		scratchbuf = scrypt_buffer_alloc((1 << (14 + 1)));
+		if (!scratchbuf) {
+			applog(LOG_ERR, "scryptCHA buffer allocation failed");
 			pthread_mutex_lock(&applog_lock);
 			exit(1);
 		}
@@ -1192,6 +1204,7 @@ static void *miner_thread(void *userdata)
 		if (max64 <= 0) {
 			switch (opt_algo) {
 			case ALGO_SCRYPT:
+			case ALGO_SCRYPTCHA:
 				max64 = opt_scrypt_n < 16 ? 0x3ffff : 0x3fffff / opt_scrypt_n;
 				break;
 			case ALGO_SHA256D:
@@ -1209,6 +1222,10 @@ static void *miner_thread(void *userdata)
 
 		/* scan nonces for a proof-of-work hash */
 		switch (opt_algo) {
+		case ALGO_SCRYPTCHA:
+			rc = scanhash_scryptCHA(thr_id, work.data, scratchbuf, work.target,
+			                     max_nonce, &hashes_done, opt_scrypt_n);
+			break;
 		case ALGO_SCRYPT:
 			rc = scanhash_scrypt(thr_id, work.data, scratchbuf, work.target,
 			                     max_nonce, &hashes_done, opt_scrypt_n);
