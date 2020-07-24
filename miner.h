@@ -158,6 +158,9 @@ extern unsigned char *scrypt_buffer_alloc(int N);
 extern int scanhash_scrypt(int thr_id, uint32_t *pdata,
 	unsigned char *scratchbuf, const uint32_t *ptarget,
 	uint32_t max_nonce, unsigned long *hashes_done, int N);
+extern int scanhash_scryptCHA(int thr_id, uint32_t *pdata,
+	unsigned char *scratchbuf, const uint32_t *ptarget,
+	uint32_t max_nonce, unsigned long *hashes_done, int N);
 
 struct thr_info {
 	int		id;

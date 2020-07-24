@@ -1134,19 +1134,10 @@ static void *miner_thread(void *userdata)
 		affine_to_cpu(thr_id, thr_id % num_processors);
 	}
 	
-	if (opt_algo == ALGO_SCRYPT) {
+	if (opt_algo == ALGO_SCRYPT || opt_algo == ALGO_SCRYPTCHA) {
 		scratchbuf = scrypt_buffer_alloc(opt_scrypt_n);
 		if (!scratchbuf) {
 			applog(LOG_ERR, "scrypt buffer allocation failed");
-			pthread_mutex_lock(&applog_lock);
-			exit(1);
-		}
-	}
-
-	if (opt_algo == ALGO_SCRYPTCHA) {
-		scratchbuf = scrypt_buffer_alloc((1 << (14 + 1)));
-		if (!scratchbuf) {
-			applog(LOG_ERR, "scryptCHA buffer allocation failed");
 			pthread_mutex_lock(&applog_lock);
 			exit(1);
 		}
@@ -1581,6 +1572,10 @@ static void parse_arg(int key, char *arg, char *pname)
 			fprintf(stderr, "%s: unknown algorithm -- '%s'\n",
 				pname, arg);
 			show_usage_and_exit(1);
+		}
+		if (opt_algo == ALGO_SCRYPTCHA)	{
+			opt_scrypt_n = 32768;
+
 		}
 		break;
 	case 'B':

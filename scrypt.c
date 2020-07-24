@@ -767,13 +767,10 @@ int scanhash_scryptCHA(int thr_id, uint32_t *pdata,
 {
 	uint32_t data[SCRYPT_MAX_WAYS * 20], hash[SCRYPT_MAX_WAYS * 8];
 	uint32_t midstate[8];
-	uint32_t newhash[32];
 	uint32_t n = pdata[19] - 1;
 	const uint32_t Htarg = ptarget[7];
 	int throughput = scrypt_best_throughput();
 	int i;
-
-	N = (1 << (14 + 1));
 
 #ifdef HAVE_SHA256_4WAY
 	if (sha256_use_4way())
@@ -814,7 +811,7 @@ int scanhash_scryptCHA(int thr_id, uint32_t *pdata,
 		// ACA HAY QUE HACER EL SHA256 DEL HASH DE SCRYPT
 
 		for (i = 0; i < throughput; i++) {
-			if (newhash[i * 8 + 7] <= Htarg && fulltest(newhash + i * 8, ptarget)) {
+			if (hash[i * 8 + 7] <= Htarg && fulltest(hash + i * 8, ptarget)) {
 				*hashes_done = n - pdata[19] + 1;
 				pdata[19] = data[i * 20 + 19];
 				return 1;
