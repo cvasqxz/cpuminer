@@ -808,22 +808,26 @@ int scanhash_scryptCHA(int thr_id, uint32_t *pdata,
 		else
 #endif
 		scrypt_1024_1_1_256(data, hash, midstate, scratchbuf, N);
-		uint32_t hash_be[8], newhash_be[8];
+		uint32_t hash_be[8];
 		char hash_str[64];
+		unsigned char buf[32], newhash_be[32];
 
 		for (int x = 0; x < throughput; x++) {
 			for (int y = 0; y < 8; y++) {
+				// hash_be es el hash separado del array completo
 				hash_be[y] = hash[y + x*8];
 			}
-
+			// print debug del hash aislado
 			bin2hex(hash_str, (unsigned char *)hash_be, 32);
 			applog(LOG_DEBUG, "DEBUG(%d): %s", x, hash_str);
 
-			// ACA HAY QUE HACER EL SHA256 DE hash_be Y DEJARLO EN newhash_be
-			// ESTOY HACIENDO UN DEBUG TERRIBLE FEO XD
+			// intento de sha256(hash), esta wea no funciona
+			memcpy(buf, hash_be, 32);
+			sha256d(newhash_be, buf, 32);
 
-			bin2hex(hash_str, (unsigned char *)newhash_be, 32);
-			applog(LOG_DEBUG, "DEBUG(%d): %s", x, hash_str);
+			// print debug del hash malo que calcule arriba
+			bin2hex(hash_str, newhash_be, 32);
+			applog(LOG_DEBUG, "DEBUG NEWHASH(%d): %s", x, hash_str);
 		}
 
 		for (i = 0; i < throughput; i++) {
