@@ -33,6 +33,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
+#include <openssl/sha.h>
 
 static const uint32_t keypad[12] = {
 	0x80000000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x00000280
@@ -812,18 +813,19 @@ int scanhash_scryptCHA(int thr_id, uint32_t *pdata,
 		unsigned char charhash[32], sha256hash[32];
 
 		for (i = 0; i < throughput; i++) {
-			if (hash[i * 8 + 7] <= Htarg && fulltest(hash + i * 8, ptarget)) {
 				memcpy(charhash, &hash[i*8], 32);
-				bin2hex(hash_str, charhash, 32);
-				applog(LOG_DEBUG, "POWHASH:  %s", hash_str);
 
-				// ESTA WEA NO FUNCIONA :C
-				sha256d(sha256hash, charhash, 32);
+				SHA256_CTX ctx;
+				SHA256_Init(&ctx);
+				SHA256_Update(&ctx, charhash, 32);
+				SHA256_Final(sha256hash, &ctx);
+
+			if (hash[i * 8 + 7] <= Htarg && fulltest(hash + i * 8, ptarget)) {
+				applog(LOG_DEBUG, "uint32_t hash %d <= target %d", hash[i * 8 + 7], Htarg);
 
 				bin2hex(hash_str, sha256hash, 32);
 				applog(LOG_DEBUG, "SHA256:   %s", hash_str);
-
-
+				
 				*hashes_done = n - pdata[19] + 1;
 				pdata[19] = data[i * 20 + 19];
 				return 1;
