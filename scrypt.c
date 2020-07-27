@@ -810,22 +810,23 @@ int scanhash_scryptCHA(int thr_id, uint32_t *pdata,
 #endif
 		scrypt_1024_1_1_256(data, hash, midstate, scratchbuf, N);
 		char hash_str[64];
-		unsigned char charhash[32], sha256hash[32];
+		uint32_t result[8];
 
 		for (i = 0; i < throughput; i++) {
-				memcpy(charhash, &hash[i*8], 32);
-
+			
 				SHA256_CTX ctx;
 				SHA256_Init(&ctx);
-				SHA256_Update(&ctx, charhash, 32);
-				SHA256_Final(sha256hash, &ctx);
+				SHA256_Update(&ctx, &hash[i*8], 32);
+				SHA256_Final(result, &ctx);
 
-			if (hash[i * 8 + 7] <= Htarg && fulltest(hash + i * 8, ptarget)) {
-				applog(LOG_DEBUG, "uint32_t hash %d <= target %d", hash[i * 8 + 7], Htarg);
-
-				bin2hex(hash_str, sha256hash, 32);
+			if (result[7] <= Htarg && fulltest(result, ptarget)) {
+				/*
+				bin2hex(hash_str, (unsigned char*)result, 32);
 				applog(LOG_DEBUG, "SHA256:   %s", hash_str);
-				
+
+				bin2hex(hash_str, (unsigned char*)&hash[i*8], 32);
+				applog(LOG_DEBUG, "HASH:   %s", hash_str);
+				*/
 				*hashes_done = n - pdata[19] + 1;
 				pdata[19] = data[i * 20 + 19];
 				return 1;
