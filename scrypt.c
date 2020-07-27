@@ -813,11 +813,11 @@ int scanhash_scryptCHA(int thr_id, uint32_t *pdata,
 		uint32_t result[8];
 
 		for (i = 0; i < throughput; i++) {
-			
+
 				SHA256_CTX ctx;
 				SHA256_Init(&ctx);
 				SHA256_Update(&ctx, &hash[i*8], 32);
-				SHA256_Final(result, &ctx);
+				SHA256_Final((unsigned char *)result, &ctx);
 
 			if (result[7] <= Htarg && fulltest(result, ptarget)) {
 				/*
