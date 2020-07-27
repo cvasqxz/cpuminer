@@ -808,30 +808,22 @@ int scanhash_scryptCHA(int thr_id, uint32_t *pdata,
 		else
 #endif
 		scrypt_1024_1_1_256(data, hash, midstate, scratchbuf, N);
-		uint32_t hash_be[8];
 		char hash_str[64];
-		unsigned char buf[32], newhash_be[32];
-
-		for (int x = 0; x < throughput; x++) {
-			for (int y = 0; y < 8; y++) {
-				// hash_be es el hash separado del array completo
-				hash_be[y] = hash[y + x*8];
-			}
-			// print debug del hash aislado
-			bin2hex(hash_str, (unsigned char *)hash_be, 32);
-			applog(LOG_DEBUG, "DEBUG(%d): %s", x, hash_str);
-
-			// intento de sha256(hash), esta wea no funciona
-			memcpy(buf, hash_be, 32);
-			sha256d(newhash_be, buf, 32);
-
-			// print debug del hash malo que calcule arriba
-			bin2hex(hash_str, newhash_be, 32);
-			applog(LOG_DEBUG, "DEBUG NEWHASH(%d): %s", x, hash_str);
-		}
+		unsigned char charhash[32], sha256hash[32];
 
 		for (i = 0; i < throughput; i++) {
 			if (hash[i * 8 + 7] <= Htarg && fulltest(hash + i * 8, ptarget)) {
+				memcpy(charhash, &hash[i*8], 32);
+				bin2hex(hash_str, charhash, 32);
+				applog(LOG_DEBUG, "POWHASH:  %s", hash_str);
+
+				// ESTA WEA NO FUNCIONA :C
+				sha256d(sha256hash, charhash, 32);
+
+				bin2hex(hash_str, sha256hash, 32);
+				applog(LOG_DEBUG, "SHA256:   %s", hash_str);
+
+
 				*hashes_done = n - pdata[19] + 1;
 				pdata[19] = data[i * 20 + 19];
 				return 1;
